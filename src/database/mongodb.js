@@ -1,3 +1,5 @@
+// THIS IS JUST A TESTING FILE FOR CHECKING THE CORE FEATURES OF MONGODB...
+
 // const mongodb = require('mongodb')
 // const MongoClient = mongodb.MongoClient
 

@@ -5,10 +5,11 @@ const sharp = require('sharp')
 
 const Auth = require('../middlewares/authentication')
 const User = require('../models/user')
+const { sendWelcomeEmail, sendDeleteEmail } = require('../emails/account')
 
 const router = new express.Router()
 
-const verifyRequest = (email, password = '') => {
+const verifyRequest = (email, password) => {
     if (email && !validator.isEmail(email)) {
         throw new Error("Email is not valid.")
     }
@@ -17,13 +18,17 @@ const verifyRequest = (email, password = '') => {
     }
 }
 
-const verifyUser = async (email, username = '') => {
-    if (!email) return;
-    const checkEmail = new RegExp("^" + email, "i")
-    const checkUsername = new RegExp("^" + username, "i")
-    const isUserExist = await User.findOne({ email: checkEmail }) || await User.findOne({ username: checkUsername })
-    if (isUserExist) {
-        throw new Error("Email/Username already Exists.")
+const verifyUser = async (email, username) => {
+    if (email) {
+        const checkEmail = new RegExp("^" + email, "i")
+        const isEmailExist = await User.findOne({ email: checkEmail });
+        if (isEmailExist) throw new Error("Email already Exists.")
+    }
+
+    if (username) {
+        const checkUsername = new RegExp("^" + username, "i");
+        const isUsernameExist =  await User.findOne({ username: checkUsername });
+        if (isUsernameExist) throw new Error("Username already Exists.");
     }
 }
 
@@ -31,13 +36,14 @@ router.post('/users', async (req, res) => {
     
     try {
         verifyRequest(req.body.email, req.body.password)
-        verifyUser(req.body.email, req.body.username)
+        await verifyUser(req.body.email, req.body.username)
         const user = new User(req.body)
         await user.save()
         const token = await user.getAuthToken()
         res.status(201).send({user, token})
+        await sendWelcomeEmail(user.name, user.email)
     } catch (error) {
-        res.status(406).send(error)
+        res.status(406).send({error: error.message})
     }
 })
 
@@ -99,6 +105,7 @@ router.delete('/users/me', Auth, async (req, res) => {
     try {
         await req.user.remove()
         res.send(req.user)
+        await sendDeleteEmail(req.user.name, req.user.email)
     } catch (error) {
         res.status(400).send(error)
     }

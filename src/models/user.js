@@ -17,10 +17,8 @@ const userSchema = new mongoose.Schema({
     username: {
         type: String,
         trim: true,
-        unique: true,
-        default: function() {
-            return this.email
-        }
+        unique: true
+        // , default: function() { return this.email }
     },
     email: {
         type: String,
@@ -28,7 +26,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true,
         validate(value) {
-            // The Below Line means verifying the provided email is already done in User-Routers
+            // The Below Line means verifying the provided email, It is already done in User-Routers
             // if (!validator.isEmail(value)) throw new Error('Email is not Valid.')
         }
     },
@@ -78,7 +76,7 @@ userSchema.virtual('tasks', {
 // Get Authentication Token for the User:-
 userSchema.methods.getAuthToken = async function() {
     const user = this;
-    const token = jwt.sign({ _id: user._id.toString() }, "KrishnaSharmaRS")
+    const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET)
 
     user.tokens = user.tokens.concat({ token })
     await user.save()
